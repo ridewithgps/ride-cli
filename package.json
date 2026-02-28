@@ -1,0 +1,24 @@
+{
+  "name": "ride-cli",
+  "version": "0.1.0",
+  "description": "Ride with GPS CLI — Claude Code integration for cycling intelligence",
+  "license": "MIT",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "./scripts/build.sh",
+    "build:release": "./scripts/release.sh",
+    "dev": "bun run src/index.ts",
+    "typecheck": "bunx tsc --noEmit",
+    "test": "bun test",
+    "check": "bun run typecheck && bun run test"
+  },
+  "dependencies": {
+    "commander": "^12.1.0",
+    "yaml": "^2.8.2"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.7.2"
+  }
+}
