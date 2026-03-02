@@ -1,20 +1,34 @@
-# ride-cli
+# ride
 
-`ride` is a CLI for Ride with GPS + Claude Code.
+A command-line tool that connects your [Ride with GPS](https://ridewithgps.com) account to Claude, giving you a conversational interface to your cycling data.
 
-It handles RWGPS auth, starts Claude with RWGPS tools enabled, and lets you run tools directly from the terminal.
+Log in, type `ride`, and start asking questions about your routes, rides, and segments in plain English.
 
-## Requirements
+## What can you do with it?
 
-- macOS or Linux
-- [Bun](https://bun.sh)
-- [Claude Code CLI](https://www.npmjs.com/package/@anthropic-ai/claude-code)
+**Explore your ride history**
 
-Install Claude Code CLI if needed:
+- "What were my longest rides last summer?"
+- "Show me all my rides in Oregon that had more than 3,000 feet of climbing"
+- "How has my weekly mileage changed over the past year?"
 
-```bash
-npm install -g @anthropic-ai/claude-code
-```
+**Plan and analyze routes**
+
+- "Find me a gravel route near Bend under 50 miles"
+- "What's the elevation profile like on this route?"
+- "Compare these two routes and tell me which one is hillier"
+
+**Get training insights**
+
+- "What's my average distance per ride this month vs last month?"
+- "Which of my rides had the best climbing-to-distance ratio?"
+- "Summarize my riding stats for 2025"
+
+**Work with the RWGPS API directly**
+
+- Browse and search the full API docs from your terminal
+- Make authenticated API calls without dealing with tokens
+- Script bulk operations against your account
 
 ## Install
 
@@ -22,146 +36,113 @@ npm install -g @anthropic-ai/claude-code
 curl -fsSL https://raw.githubusercontent.com/ridewithgps/ride-cli/master/install.sh | bash
 ```
 
-This installs `ride` to `/usr/local/bin/ride`.
+Installs a single binary to `/usr/local/bin/ride`. Works on macOS and Linux.
 
-## Quick Start
+### Requirements
+
+- [Claude Code CLI](https://www.npmjs.com/package/@anthropic-ai/claude-code) (`npm install -g @anthropic-ai/claude-code`)
+
+## Getting started
 
 ```bash
-ride login
-ride status
-ride
+ride login    # authenticate with Ride with GPS (opens your browser)
+ride status   # verify everything is connected
+ride          # start a conversation
 ```
 
-`ride` starts an interactive Claude session with RWGPS tools available.
+That's it. Once you're in a session, just ask questions or give instructions in natural language. Claude has access to your RWGPS data through a set of server-provided tools and can search rides, analyze routes, look up segments, and more.
 
-On interactive startup, `ride` checks for updates and prompts to upgrade in-place when a newer version is available.
-`ride login` stores one OAuth session used by both Cadence tools and `ride api`.
+## Usage
 
-## Commands
+### Interactive mode
 
-- `ride`  
-  Start interactive mode.
-- `ride [claude-args...]`  
-  Pass arguments directly through to Claude Code (for example `--continue`, `--model`, `--dangerously-skip-permissions`).
-- `ride ask "<prompt>"`  
-  Run a one-off prompt and print output.
-- `ride tool list`  
-  List available tools.
-- `ride tool <name> [args...]`  
-  Run a tool directly.
-- `ride api request <method> <path> [options]`  
-  Call the public API (`/api/v1/*`) with your current OAuth session.
-- `ride api <get|post|put|patch|delete> <path> [options]`  
-  Convenience methods for API requests.
-- `ride api docs list [--limit N] [--refresh]`  
-  List API coverage from OpenAPI with endpoint groups.
-- `ride api docs find <query> [--limit N] [--refresh]`  
-  Search endpoint docs by keyword.
-- `ride api docs show <method> <path> [--refresh]`  
-  Show parameters, request body, responses, and auth details for one endpoint.
-- `ride login`  
-  Authenticate with Ride with GPS via OAuth (browser-based PKCE flow).
-- `ride login --no-browser`  
-  Print authorize URL without trying to launch a browser.
-- `ride login --reauth`  
-  Force a fresh OAuth login.
-- `ride logout`  
-  Clear saved credentials.
-- `ride status`  
-  Show server, auth state, and Claude status.
-- `ride upgrade`  
-  Update to the latest release binary.
+```bash
+ride                # start a conversation
+ride --continue     # resume your last conversation
+ride --model sonnet # use a specific model
+```
 
-## Tool Usage
+Any flags not recognized by `ride` are passed directly to Claude Code, so all Claude CLI options work.
 
-List tools:
+### One-off questions
+
+```bash
+ride ask "what was my longest ride this year?"
+```
+
+Prints the answer and exits. Useful for scripting or quick lookups.
+
+### Direct tool access
 
 ```bash
 ride tool list
-```
-
-Run with flags:
-
-```bash
 ride tool search_my_rides --limit 10 --query "gravel"
+ride tool analyze_route '{"route_id": 12345, "include_wind": true}'
 ```
 
-Run with JSON:
+Run RWGPS tools directly without going through a Claude conversation. Handy for scripting or debugging.
 
-```bash
-ride tool analyze_route '{"route_id":12345,"include_wind":true}'
-```
+### API access
 
-Claude passthrough examples:
-
-```bash
-ride --continue
-ride --model sonnet
-ride --dangerously-skip-permissions
-```
-
-Public API examples:
+Make authenticated calls to the [RWGPS public API](https://ridewithgps.com/api):
 
 ```bash
 ride api get /api/v1/users/current
 ride api get /api/v1/trips.json --query page_size=10 --query visibility=private
 ride api post /api/v1/events.json --json @event.json
-ride api request patch /api/v1/events/123.json --header "If-Match: abc123" --data @payload.json
-ride api request delete /api/v1/routes/123.json
-ride api docs list
-ride api docs find "users current"
-ride api docs show get /api/v1/users/current
+ride api delete /api/v1/routes/123.json
 ```
 
-API request options:
+Options: `--query key=value`, `--header "Name: value"`, `--json <json|@file>`, `--data <text|@file>`.
 
-- `--query key=value` repeatable query params
-- `--header "Name: value"` repeatable headers
-- `--json <json|@file>` JSON body (validated)
-- `--data <text|@file>` raw body
+### API docs
 
-`ride api` only accepts paths under `/api/v1`.
+Browse the RWGPS API documentation without leaving your terminal:
 
-`ride api docs` reads from `/api/v1/openapi.yaml` and caches it locally for faster lookup.
-Use `--refresh` on docs commands to bypass cache.
+```bash
+ride api docs list                          # list all endpoints
+ride api docs find "users current"          # search by keyword
+ride api docs show get /api/v1/users/current # full details for one endpoint
+```
 
-`ride` pre-allows:
+Results are cached locally. Use `--refresh` to bypass the cache.
 
-- `Bash(ride tool:*)` for RWGPS tool calls
-- `Bash(ride api:*)` for RWGPS public API calls + docs lookup
-- `Read(/tmp/ride-cli-*/system-prompt.md)` for startup prompt loading
-- temp prompt directory access via Claude `--add-dir /tmp/ride-cli-*`
+## Commands
+
+| Command | Description |
+|---|---|
+| `ride` | Start interactive Claude session with RWGPS tools |
+| `ride ask "<prompt>"` | One-off query, prints answer and exits |
+| `ride tool list` | List available RWGPS tools |
+| `ride tool <name> [args]` | Run a tool directly |
+| `ride api <get\|post\|put\|patch\|delete> <path>` | Authenticated API call |
+| `ride api docs list\|find\|show` | Browse API documentation |
+| `ride login` | Authenticate via OAuth (browser-based) |
+| `ride logout` | Clear saved credentials |
+| `ride status` | Show connection and auth status |
+| `ride upgrade` | Update to the latest version |
 
 ## Configuration
 
-Default API server:
+OAuth credentials are stored in `~/.config/ride/config.json` with restricted permissions.
 
-- `https://cowboy.ridewithgps.com`
-
-Optional environment variables:
-
-- `RIDE_API_URL`  
-  Override API base URL.
-- `RIDE_CONFIG_DIR`  
-  Override config directory (default: `~/.config/ride`).
-- `RIDE_OAUTH_CLIENT_ID`  
-  Override OAuth client id used by `ride login` and token refresh.
-
-OAuth session credentials are stored in `~/.config/ride/config.json` with restricted permissions.
+| Variable | Default | Description |
+|---|---|---|
+| `RIDE_API_URL` | `https://cowboy.ridewithgps.com` | API base URL |
+| `RIDE_CONFIG_DIR` | `~/.config/ride` | Config directory |
+| `RIDE_OAUTH_CLIENT_ID` | `ride-cli` | OAuth client ID |
 
 ## Troubleshooting
-
-Run:
 
 ```bash
 ride status
 ```
 
-Common fixes:
+This shows your auth state, API connectivity, and whether Claude Code is installed. Common fixes:
 
-- Not logged in: `ride login`
-- `claude` not found: `npm install -g @anthropic-ai/claude-code`
-- `ride` not found: ensure `/usr/local/bin` is in your `PATH`
+- **Not logged in** -- `ride login`
+- **`claude` not found** -- `npm install -g @anthropic-ai/claude-code`
+- **`ride` not found** -- make sure `/usr/local/bin` is in your `PATH`
 
 ## License
 
